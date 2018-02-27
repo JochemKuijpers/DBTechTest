@@ -8,6 +8,9 @@
 #include "Estimator.h"
 #include "SimpleGraph.h"
 
+#include <unordered_map>
+#include <unordered_set>
+
 class PairHasher {
 public:
     template <typename T, typename U>

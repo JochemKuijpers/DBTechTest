@@ -5,8 +5,6 @@
 #include "SimpleGraph.h"
 #include "SimpleEstimator.h"
 
-#include <unordered_map>
-#include <unordered_set>
 #include <cmath>
 
 SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g) :
