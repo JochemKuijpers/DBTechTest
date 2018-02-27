@@ -8,9 +8,26 @@
 #include "Estimator.h"
 #include "SimpleGraph.h"
 
+class PairHasher {
+public:
+    template <typename T, typename U>
+    std::size_t operator()(const std::pair<T, U> &x) const {
+        return std::hash<T>()(x.first) ^ std::hash<U>()(x.second);
+    }
+};
+
 class SimpleEstimator : public Estimator {
 
     std::shared_ptr<SimpleGraph> graph;
+
+    // mapping from edgelabel to set of end vertices
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> startVerticesPerEdgeLabel;
+
+    // mapping from edgelabel to set of end vertices
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> endVerticesPerEdgeLabel;
+
+    // mapping from edgelabel to set of vertex pairs
+    std::unordered_map<uint32_t, std::unordered_set<std::pair<uint32_t, uint32_t>, PairHasher>> vertexPairsPerEdgeLabel;
 
 public:
     explicit SimpleEstimator(std::shared_ptr<SimpleGraph> &g);
