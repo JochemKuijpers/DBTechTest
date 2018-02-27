@@ -16,6 +16,16 @@ public:
     }
 };
 
+struct internalCardStat {
+    uint32_t noOut;
+    uint32_t noPaths;
+    uint32_t noIn;
+    uint32_t firstLabel;
+    uint32_t lastLabel;
+    bool firstDirection;
+    bool lastDirection;
+};
+
 class SimpleEstimator : public Estimator {
 
     std::shared_ptr<SimpleGraph> graph;
@@ -36,6 +46,7 @@ public:
     void prepare() override ;
     cardStat estimate(RPQTree *q) override ;
 
+    internalCardStat internalEstimate(RPQTree *q);
 };
 
 
