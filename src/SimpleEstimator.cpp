@@ -43,9 +43,9 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
         }
 
         // combine the two subqueries (too simple for now..)
-        return cardStat {left.noOut,
-                         static_cast<uint32_t>((left.noPaths + right.noPaths) * 0.5),
-                         right.noIn};
+        return cardStat {static_cast<uint32_t>((left.noOut + right.noOut) * 0.5),
+                         left.noPaths + right.noPaths,
+                         static_cast<uint32_t>((left.noIn + right.noIn) * 0.5)};
 
     }
 
