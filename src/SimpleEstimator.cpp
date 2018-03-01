@@ -33,31 +33,19 @@ void SimpleEstimator::prepare() {
 }
 
 cardStat SimpleEstimator::estimate(RPQTree *q) {
-    const internalCardStat result = internalEstimate(q);
-    return {result.noOut, result.noPaths, result.noIn};
-}
-
-internalCardStat SimpleEstimator::internalEstimate(RPQTree *q) {
     if (q->isConcat()) {
-        const internalCardStat left = internalEstimate(q->left);
-        const internalCardStat right = internalEstimate(q->right);
+        const cardStat left = estimate(q->left);
+        const cardStat right = estimate(q->right);
 
         // zero cases.
         if (left.noIn == 0 || left.noOut == 0 || left.noPaths == 0 || right.noIn == 0 || right.noOut == 0 || right.noPaths == 0) {
-            return internalCardStat {0, 0, 0};
+            return cardStat {0, 0, 0};
         }
 
-        return internalCardStat {static_cast<uint32_t>(left.noIn),
-                                 static_cast<uint32_t>(
-                                         left.noOut *
-                                         ((double)left.noPaths / left.noIn) *
-                                         ((double)right.noPaths / right.noOut)
-                                 ),
-                                 static_cast<uint32_t>(right.noOut),
-                                 left.firstLabel,
-                                 right.lastLabel,
-                                 left.firstDirection,
-                                 right.lastDirection};
+        // combine the two subqueries (too simple for now..)
+        return cardStat {left.noOut,
+                         static_cast<uint32_t>((left.noPaths + right.noPaths) * 0.5),
+                         right.noIn};
 
     }
 
@@ -65,14 +53,12 @@ internalCardStat SimpleEstimator::internalEstimate(RPQTree *q) {
     char* sign;
     const auto label = static_cast<uint32_t>(strtoll(q->data.c_str(), &sign, 10));
     if (*sign == '+') {
-        return internalCardStat {static_cast<uint32_t>(startVerticesPerEdgeLabel[label].size()),
-                                 static_cast<uint32_t>(vertexPairsPerEdgeLabel[label].size()),
-                                 static_cast<uint32_t>(endVerticesPerEdgeLabel[label].size()),
-                                 label, label, true, true};
+        return cardStat {static_cast<uint32_t>(startVerticesPerEdgeLabel[label].size()),
+                         static_cast<uint32_t>(vertexPairsPerEdgeLabel[label].size()),
+                         static_cast<uint32_t>(endVerticesPerEdgeLabel[label].size())};
     } else {
-        return internalCardStat {static_cast<uint32_t>(endVerticesPerEdgeLabel[label].size()),
-                                 static_cast<uint32_t>(vertexPairsPerEdgeLabel[label].size()),
-                                 static_cast<uint32_t>(startVerticesPerEdgeLabel[label].size()),
-                                 label, label, false, false};
+        return cardStat {static_cast<uint32_t>(endVerticesPerEdgeLabel[label].size()),
+                         static_cast<uint32_t>(vertexPairsPerEdgeLabel[label].size()),
+                         static_cast<uint32_t>(startVerticesPerEdgeLabel[label].size())};
     }
 }
