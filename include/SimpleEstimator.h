@@ -24,13 +24,13 @@ class SimpleEstimator : public Estimator {
     std::shared_ptr<SimpleGraph> graph;
 
     // mapping from edgelabel to set of end vertices
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> startVerticesPerEdgeLabel;
+    std::unordered_map<uint32_t, uint32_t> startVerticesPerEdgeLabel;
 
     // mapping from edgelabel to set of end vertices
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> endVerticesPerEdgeLabel;
+    std::unordered_map<uint32_t, uint32_t> endVerticesPerEdgeLabel;
 
     // mapping from edgelabel to set of vertex pairs
-    std::unordered_map<uint32_t, std::unordered_set<std::pair<uint32_t, uint32_t>, PairHasher>> vertexPairsPerEdgeLabel;
+    std::unordered_map<uint32_t, uint32_t> vertexPairsPerEdgeLabel;
 
 public:
     explicit SimpleEstimator(std::shared_ptr<SimpleGraph> &g);

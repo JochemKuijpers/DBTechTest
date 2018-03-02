@@ -23,11 +23,23 @@ void SimpleEstimator::prepare() {
     for (uint32_t vert = 0; vert < graph->getNoVertices(); ++vert) {
         for (auto out : graph->adj[vert]) {
             const auto label = out.first;
-            const auto destination = out.second;
+            vertexPairsPerEdgeLabel[label]++;
+        }
 
-            startVerticesPerEdgeLabel[label].insert(vert);
-            endVerticesPerEdgeLabel[label].insert(destination);
-            vertexPairsPerEdgeLabel[label].insert(std::pair<uint32_t, uint32_t>(vert, destination));
+        for (uint32_t label = 0; label < graph->getNoLabels(); ++label) {
+            for (auto out : graph->adj[vert]) {
+                if (out.first == label) {
+                    startVerticesPerEdgeLabel[label]++;
+                    break;
+                }
+            }
+
+            for (auto in : graph->reverse_adj[vert]) {
+                if (label == in.first) {
+                    endVerticesPerEdgeLabel[label]++;
+                    break;
+                }
+            }
         }
     }
 }
@@ -43,9 +55,12 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
         }
 
         // combine the two subqueries (too simple for now..)
-        return cardStat {static_cast<uint32_t>((left.noOut + right.noOut) * 0.5),
-                         left.noPaths + right.noPaths,
-                         static_cast<uint32_t>((left.noIn + right.noIn) * 0.5)};
+        return cardStat {left.noOut,
+            (uint32_t) std::min(
+                left.noPaths * (double)right.noPaths / left.noIn,
+                right.noPaths * (double)left.noPaths / right.noOut
+            ),
+            right.noIn};
 
     }
 
@@ -53,12 +68,16 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     char* sign;
     const auto label = static_cast<uint32_t>(strtoll(q->data.c_str(), &sign, 10));
     if (*sign == '+') {
-        return cardStat {static_cast<uint32_t>(startVerticesPerEdgeLabel[label].size()),
-                         static_cast<uint32_t>(vertexPairsPerEdgeLabel[label].size()),
-                         static_cast<uint32_t>(endVerticesPerEdgeLabel[label].size())};
+        return cardStat {
+            startVerticesPerEdgeLabel[label],
+            vertexPairsPerEdgeLabel[label],
+            endVerticesPerEdgeLabel[label]
+        };
     } else {
-        return cardStat {static_cast<uint32_t>(endVerticesPerEdgeLabel[label].size()),
-                         static_cast<uint32_t>(vertexPairsPerEdgeLabel[label].size()),
-                         static_cast<uint32_t>(startVerticesPerEdgeLabel[label].size())};
+        return cardStat {
+            endVerticesPerEdgeLabel[label],
+            vertexPairsPerEdgeLabel[label],
+            startVerticesPerEdgeLabel[label]
+        };
     }
 }
