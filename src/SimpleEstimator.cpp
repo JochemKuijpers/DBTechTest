@@ -37,44 +37,6 @@ void SimpleEstimator::prepare() {
     }
 }
 
-uint32_t SimpleEstimator::sampleLabel(uint32_t label, std::vector<uint32_t> &samplesIn, std::vector<uint32_t> &samplesOut, uint32_t maxSize) {
-    auto cpt = std::vector<std::pair<uint32_t, std::vector<uint32_t>>>();
-    auto cptSumTo = std::vector<uint32_t>();
-    uint32_t sum = 0;
-
-    for (auto sample : samplesIn) {
-        auto indexOfSample = vertexIndexByLabel[label][sample];
-        sum += indexOfSample.size();
-
-        cpt.emplace_back(sample, indexOfSample);
-        cptSumTo.push_back(sum);
-    }
-
-    samplesOut.clear();
-    auto sampleIDs = std::vector<uint32_t>();
-
-    // shuffle a vector [0 ... sum] and use only the first min(sum, maxSize) elements to obtain uniformly distributed IDs
-    for (uint32_t i = 0; i < sum; ++i) {
-        sampleIDs.push_back(i);
-    }
-    std::random_shuffle(sampleIDs.begin(), sampleIDs.end());
-
-    for (uint32_t i = 0; i < std::min(sum, maxSize); ++i) {
-        auto id = sampleIDs[i];
-        // find inSampleIndex such that inSampleIndex = max{inSampleIndex | cptSumTo[inSampleIndex] <= id}
-        auto inSampleIndex = 0; for (;cptSumTo[inSampleIndex++] <= id;); inSampleIndex--;
-        // auto leftSample = cpt[inSampleIndex].first;
-        auto offset = id;
-        if (inSampleIndex > 0) {
-            offset -= cptSumTo[inSampleIndex-1];
-        }
-        auto outSample = cpt[inSampleIndex].second[offset];
-        samplesOut.push_back(outSample);
-    }
-
-    return sum;
-}
-
 void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
     if (q->isConcat()) {
         unpackQueryTree(path, q->left);
@@ -96,7 +58,7 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     std::vector<uint32_t> leftSamples;
     std::vector<uint32_t> rightSamples;
 
-    double underSampling = 250;
+    double underSampling = 100;
     auto MAX_SAMPLING = static_cast<const int>(graph->getNoVertices() / underSampling);
     int skip = graph->getNoVertices() / MAX_SAMPLING;
 
