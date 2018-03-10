@@ -34,8 +34,6 @@ public:
     void prepare() override;
 
     cardStat estimate(RPQTree *q) override;
-
-    uint32_t sampleLabel(uint32_t label, std::vector<uint32_t> &samplesIn, std::vector<uint32_t> &samplesOut, uint32_t maxSize);
 };
 
 #endif //QS_SIMPLEESTIMATOR_H
