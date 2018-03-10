@@ -59,11 +59,10 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     std::vector<uint32_t> rightSamples;
 
     double underSampling = 100;
-    auto MAX_SAMPLING = static_cast<const int>(graph->getNoVertices() / underSampling);
-    int skip = graph->getNoVertices() / MAX_SAMPLING;
+    auto MAX_SAMPLING = static_cast<uint32_t>(graph->getNoVertices() / underSampling);
 
     std::default_random_engine generator;
-    std::uniform_int_distribution<int> distribution(1,skip);
+    std::uniform_int_distribution<int> distribution(1, graph->getNoVertices() / MAX_SAMPLING);
 
     for (auto step : path) {
         if (first) {
@@ -90,11 +89,10 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
         }
 
         if (rightSamples.size() > MAX_SAMPLING) {
-            underSampling *= (rightSamples.size() / MAX_SAMPLING);
-            while (rightSamples.size() > MAX_SAMPLING) {
-                distribution = std::uniform_int_distribution<int>(0, static_cast<int>(rightSamples.size() - 1));
-                rightSamples.erase(rightSamples.begin() + (distribution(generator)));
-            }
+            underSampling *= ((double) rightSamples.size() / MAX_SAMPLING);
+
+            std::random_shuffle(rightSamples.begin(), rightSamples.end());
+            rightSamples.resize(MAX_SAMPLING);
         }
     }
 
