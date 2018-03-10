@@ -9,7 +9,8 @@
 #include <random>
 
 SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g) :
-    vertexIndexByLabel() {
+    vertexIndexByLabel(),
+    vertexIndexByLabelReverse() {
 
     // works only with SimpleGraph
     graph = g;
@@ -26,7 +27,52 @@ void SimpleEstimator::prepare() {
 
             vertexIndexByLabel[label][vertex].push_back(destination);
         }
+
+        for (auto edge : graph->reverse_adj[vertex]) {
+            auto label = edge.first;
+            auto origin = edge.second;
+
+            vertexIndexByLabelReverse[label][vertex].push_back(origin);
+        }
     }
+}
+
+uint32_t SimpleEstimator::sampleLabel(uint32_t label, std::vector<uint32_t> &samplesIn, std::vector<uint32_t> &samplesOut, uint32_t maxSize) {
+    auto cpt = std::vector<std::pair<uint32_t, std::vector<uint32_t>>>();
+    auto cptSumTo = std::vector<uint32_t>();
+    uint32_t sum = 0;
+
+    for (auto sample : samplesIn) {
+        auto indexOfSample = vertexIndexByLabel[label][sample];
+        sum += indexOfSample.size();
+
+        cpt.emplace_back(sample, indexOfSample);
+        cptSumTo.push_back(sum);
+    }
+
+    samplesOut.clear();
+    auto sampleIDs = std::vector<uint32_t>();
+
+    // shuffle a vector [0 ... sum] and use only the first min(sum, maxSize) elements to obtain uniformly distributed IDs
+    for (uint32_t i = 0; i < sum; ++i) {
+        sampleIDs.push_back(i);
+    }
+    std::random_shuffle(sampleIDs.begin(), sampleIDs.end());
+
+    for (uint32_t i = 0; i < std::min(sum, maxSize); ++i) {
+        auto id = sampleIDs[i];
+        // find inSampleIndex such that inSampleIndex = max{inSampleIndex | cptSumTo[inSampleIndex] <= id}
+        auto inSampleIndex = 0; for (;cptSumTo[inSampleIndex++] <= id;); inSampleIndex--;
+        // auto leftSample = cpt[inSampleIndex].first;
+        auto offset = id;
+        if (inSampleIndex > 0) {
+            offset -= cptSumTo[inSampleIndex-1];
+        }
+        auto outSample = cpt[inSampleIndex].second[offset];
+        samplesOut.push_back(outSample);
+    }
+
+    return sum;
 }
 
 void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
@@ -50,12 +96,16 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     std::vector<uint32_t> leftSamples;
     std::vector<uint32_t> rightSamples;
 
-    double underSampling = 10;
-    const int MAX_SAMPLING = 1000;
+    double underSampling = 1000;
+    auto MAX_SAMPLING = static_cast<const int>(graph->getNoVertices() / underSampling);
+    int skip = graph->getNoVertices() / MAX_SAMPLING;
+
+    std::default_random_engine generator;
+    std::uniform_int_distribution<int> distribution(1,skip);
 
     for (auto step : path) {
         if (first) {
-            for (uint32_t vertex = 0; vertex < graph->getNoVertices(); vertex += underSampling) {
+            for (uint32_t vertex = 0; vertex < graph->getNoVertices(); vertex += distribution(generator)) {
                 leftSamples.push_back(vertex);
             }
             first = false;
@@ -66,14 +116,23 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
         }
 
         for (auto left : leftSamples) {
-            for (auto right : vertexIndexByLabel[step.first][left]) {
-                rightSamples.push_back(right);
+            if (step.second) {
+                for (auto right : vertexIndexByLabel[step.first][left]) {
+                    rightSamples.push_back(right);
+                }
+            } else {
+                for (auto right : vertexIndexByLabelReverse[step.first][left]) {
+                    rightSamples.push_back(right);
+                }
             }
         }
 
-        while (rightSamples.size() > MAX_SAMPLING) {
+        if (rightSamples.size() > MAX_SAMPLING) {
             underSampling *= (rightSamples.size() / MAX_SAMPLING);
-            rightSamples.erase(rightSamples.begin() + (rand() % rightSamples.size()));
+            while (rightSamples.size() > MAX_SAMPLING) {
+                distribution = std::uniform_int_distribution<int>(0, static_cast<int>(rightSamples.size() - 1));
+                rightSamples.erase(rightSamples.begin() + (distribution(generator)));
+            }
         }
     }
 

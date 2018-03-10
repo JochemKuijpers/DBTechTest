@@ -24,6 +24,7 @@ class SimpleEstimator : public Estimator {
     std::shared_ptr<SimpleGraph> graph;
 
     std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> vertexIndexByLabel;
+    std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> vertexIndexByLabelReverse;
 
 public:
     explicit SimpleEstimator(std::shared_ptr<SimpleGraph> &g);
@@ -33,6 +34,8 @@ public:
     void prepare() override;
 
     cardStat estimate(RPQTree *q) override;
+
+    uint32_t sampleLabel(uint32_t label, std::vector<uint32_t> &samplesIn, std::vector<uint32_t> &samplesOut, uint32_t maxSize);
 };
 
 #endif //QS_SIMPLEESTIMATOR_H
