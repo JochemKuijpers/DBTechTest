@@ -58,7 +58,7 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     std::vector<uint32_t> leftSamples;
     std::vector<uint32_t> rightSamples;
 
-    double underSampling = 100;
+    double underSampling = 10;
     auto MAX_SAMPLING = static_cast<const int>(graph->getNoVertices() / underSampling);
     int skip = graph->getNoVertices() / MAX_SAMPLING;
 
