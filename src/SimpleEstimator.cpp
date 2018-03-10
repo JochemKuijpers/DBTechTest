@@ -65,18 +65,22 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     std::default_random_engine generator;
     std::uniform_int_distribution<int> distribution(1,skip);
 
+    // evaluate the query along the query path
     for (auto step : path) {
         if (first) {
+            // consider a random sampling; 1/undersampling of all vertices.
             for (uint32_t vertex = 0; vertex < graph->getNoVertices(); vertex += distribution(generator)) {
                 leftSamples.push_back(vertex);
             }
             first = false;
         } else {
+            // for every next step; shift the results from right to left and clear the right results
             leftSamples.clear();
             leftSamples = rightSamples;
             rightSamples.clear();
         }
 
+        // calculate the right samples (the samples created by the left samples and the current edge label)
         for (auto left : leftSamples) {
             if (step.second) {
                 for (auto right : vertexIndexByLabel[step.first][left]) {
@@ -89,6 +93,7 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
             }
         }
 
+        // if the right sample list is too large, reduce it and increase the undersampling factor.
         if (rightSamples.size() > MAX_SAMPLING) {
             underSampling *= (rightSamples.size() / MAX_SAMPLING);
             while (rightSamples.size() > MAX_SAMPLING) {
@@ -98,5 +103,7 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
         }
     }
 
+    // return {1, (number of samples * undersampling), 1}
+    // since we have no calculation for noIn and noOut.
     return {1, static_cast<uint32_t>(rightSamples.size() * underSampling), 1};
 }
