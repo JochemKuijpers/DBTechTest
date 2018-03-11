@@ -69,10 +69,8 @@ double SimpleEstimator::generateSampling(std::vector<uint32_t> *from, std::vecto
     }
 
     // generate list of all sampleIds, shuffle it and only use the first sampleSize items
-//    for (uint32_t i = 0; i < from->size(); sampleIds.push_back(i++));
-//    std::random_shuffle(sampleIds.begin(), sampleIds.end());
-
-    generateSampleIds(sampleSize, static_cast<uint32_t>(from->size() - 1), &sampleIds);
+    for (uint32_t i = 0; i < from->size(); sampleIds.push_back(i++));
+    std::random_shuffle(sampleIds.begin(), sampleIds.end());
 
     for (uint32_t i = 0; i < sampleSize; i++) {
         to->push_back((*from)[sampleIds[i]]);
@@ -95,7 +93,7 @@ double SimpleEstimator::indexBasedJoinSampling(std::unordered_map<uint32_t, std:
         cptPerVertex.push_back(cpt);
     }
 
-    if (cpt <= sampleSize) {
+    if (cpt < sampleSize) {
         // the entire join fits in the sampling, skip expensive stuff and just return the image
         for (auto fromVertex : *from) {
             for (auto toVertex : (*index)[fromVertex]) {
@@ -106,9 +104,8 @@ double SimpleEstimator::indexBasedJoinSampling(std::unordered_map<uint32_t, std:
     }
 
     // generate list of all sampleIds, shuffle it and only use the first sampleSize items
-//    for (uint32_t i = 0; i < cpt; sampleIds.push_back(i++));
-//    std::random_shuffle(sampleIds.begin(), sampleIds.end());
-    generateSampleIds(sampleSize, cpt - 1, &sampleIds);
+    for (uint32_t i = 0; i < cpt; sampleIds.push_back(i++));
+    std::random_shuffle(sampleIds.begin(), sampleIds.end());
 
     uint32_t ID;
     uint32_t fromVertexIndex;
@@ -127,33 +124,6 @@ double SimpleEstimator::indexBasedJoinSampling(std::unordered_map<uint32_t, std:
     }
 
     return (double) cpt / sampleSize;
-}
-
-void SimpleEstimator::generateSampleIds(uint32_t sampleSize, uint32_t maxValue, std::vector<uint32_t> *sampleIds) {
-    sampleIds->clear();
-
-    if (sampleSize > maxValue/2) {
-        for (uint32_t i = 0; i <  std::min(sampleSize, maxValue); sampleIds->push_back(i++));
-        std::random_shuffle(sampleIds->begin(), sampleIds->end());
-        return;
-    }
-
-    std::unordered_set<uint32_t> uniqueSampleIds;
-    std::uniform_int_distribution<uint32_t> distribution(0, maxValue);
-    std::random_device generator;
-
-    uint32_t r;
-    for (uint32_t i = 0; i < std::min(sampleSize, maxValue); ++i) {
-        do {
-            r = distribution(generator);
-        } while (uniqueSampleIds.find(r) != uniqueSampleIds.end());
-
-        uniqueSampleIds.insert(r);
-    }
-
-    for (auto ID : uniqueSampleIds) {
-        sampleIds->push_back(ID);
-    }
 }
 
 cardStat SimpleEstimator::estimate(RPQTree *q) {

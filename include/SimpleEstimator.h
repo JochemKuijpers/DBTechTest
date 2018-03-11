@@ -42,8 +42,6 @@ public:
     double indexBasedJoinSampling(std::unordered_map<uint32_t, std::vector<uint32_t>> *index,
                                   std::vector<uint32_t> *from, std::vector<uint32_t> *to,
                                   uint32_t sampleSize);
-
-    void generateSampleIds(uint32_t sampleSize, uint32_t maxValue, std::vector<uint32_t> *sampleIds);
 };
 
 #endif //QS_SIMPLEESTIMATOR_H
