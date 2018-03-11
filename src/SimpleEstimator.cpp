@@ -73,7 +73,7 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     // if the sample list is too large, reduce it and increase the undersampling factor.
     if (leftSamples.size() > MAX_SAMPLING) {
         underSampling *= (double) leftSamples.size() / MAX_SAMPLING;
-        std::random_shuffle(leftSamples.begin(), leftSamples.end(), generator);
+        std::random_shuffle(leftSamples.begin(), leftSamples.end());
         leftSamples.resize(MAX_SAMPLING);
     }
 
@@ -95,7 +95,7 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
         // if the right sample list is too large, reduce it and increase the undersampling factor.
         if (rightSamples.size() > MAX_SAMPLING) {
             underSampling *= (double) rightSamples.size() / MAX_SAMPLING;
-            std::random_shuffle(rightSamples.begin(), rightSamples.end(), generator);
+            std::random_shuffle(rightSamples.begin(), rightSamples.end());
             rightSamples.resize(MAX_SAMPLING);
         }
 
