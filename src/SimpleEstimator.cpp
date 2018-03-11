@@ -136,7 +136,7 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     auto *rightSamples = new std::vector<uint32_t>();
 
     double underSampling;
-    uint32_t MAX_SAMPLING = 72;
+    uint32_t MAX_SAMPLING = 64;
 
     // generate uniform sampling of the outVertices for the first label
     if (path[0].second) {
