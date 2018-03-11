@@ -23,8 +23,10 @@ class SimpleEstimator : public Estimator {
 
     std::shared_ptr<SimpleGraph> graph;
 
-    std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> vertexIndexByLabel;
-    std::map<uint32_t, std::map<uint32_t, std::vector<uint32_t>>> vertexIndexByLabelReverse;
+    std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::vector<uint32_t>>> vertexIndexByLabel;
+    std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::vector<uint32_t>>> vertexIndexByLabelReverse;
+    std::unordered_map<uint32_t, std::vector<uint32_t>> outVertexByLabel;
+    std::unordered_map<uint32_t, std::vector<uint32_t>> inVertexByLabel;
 
 public:
     explicit SimpleEstimator(std::shared_ptr<SimpleGraph> &g);
@@ -34,6 +36,12 @@ public:
     void prepare() override;
 
     cardStat estimate(RPQTree *q) override;
+
+    double generateSampling(std::vector<uint32_t> *from, std::vector<uint32_t> *to, uint32_t sampleSize);
+
+    double indexBasedJoinSampling(std::unordered_map<uint32_t, std::vector<uint32_t>> *index,
+                                  std::vector<uint32_t> *from, std::vector<uint32_t> *to,
+                                  uint32_t sampleSize);
 };
 
 #endif //QS_SIMPLEESTIMATOR_H
