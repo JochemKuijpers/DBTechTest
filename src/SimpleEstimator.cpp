@@ -72,11 +72,9 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
 
     // if the sample list is too large, reduce it and increase the undersampling factor.
     if (leftSamples.size() > MAX_SAMPLING) {
-        underSampling *= ((double) leftSamples.size() / MAX_SAMPLING);
-        while (leftSamples.size() > MAX_SAMPLING) {
-            distribution = std::uniform_int_distribution<int>(0, static_cast<int>(leftSamples.size() - 1));
-            leftSamples.erase(leftSamples.begin() + (distribution(generator)));
-        }
+        underSampling *= (double) leftSamples.size() / MAX_SAMPLING;
+        std::random_shuffle(leftSamples.begin(), leftSamples.end(), generator);
+        leftSamples.resize(MAX_SAMPLING);
     }
 
     // evaluate the query along the query path
@@ -96,11 +94,9 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
 
         // if the right sample list is too large, reduce it and increase the undersampling factor.
         if (rightSamples.size() > MAX_SAMPLING) {
-            underSampling *= ((double) rightSamples.size() / MAX_SAMPLING);
-            while (rightSamples.size() > MAX_SAMPLING) {
-                distribution = std::uniform_int_distribution<int>(0, static_cast<int>(rightSamples.size() - 1));
-                rightSamples.erase(rightSamples.begin() + (distribution(generator)));
-            }
+            underSampling *= (double) rightSamples.size() / MAX_SAMPLING;
+            std::random_shuffle(rightSamples.begin(), rightSamples.end(), generator);
+            rightSamples.resize(MAX_SAMPLING);
         }
 
         // copy right samples to left, clear right samples.
