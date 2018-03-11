@@ -93,7 +93,7 @@ double SimpleEstimator::indexBasedJoinSampling(std::unordered_map<uint32_t, std:
         cptPerVertex.push_back(cpt);
     }
 
-    if (cpt < sampleSize) {
+    if (cpt <= sampleSize) {
         // the entire join fits in the sampling, skip expensive stuff and just return the image
         for (auto fromVertex : *from) {
             for (auto toVertex : (*index)[fromVertex]) {
