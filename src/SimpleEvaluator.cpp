@@ -27,19 +27,47 @@ void SimpleEvaluator::prepare() {
 
 cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &g) {
 
-    cardStat stats {};
+    cardStat stats {0, 0, 0};
 
-//    for(int source = 0; source < g->getNoVertices(); source++) {
-//        if(!g->adj[source].empty()) stats.noOut++;
-//    }
     stats.noOut = g->size();
 
-    stats.noPaths = 420; // TODO: Fix.
+    std::unordered_set<uint32_t> uniqueDests;
 
-//    for(int target = 0; target < g->getNoVertices(); target++) {
-//        //if(!g->reverse_adj[target].empty()) stats.noIn++;
-//    }
-    stats.noIn = 1337; // TODO: Fix.
+    uint32_t length = graph->getNoVertices() / sizeof(uint8_t) + 1;
+    auto *destBitset = static_cast<uint8_t *>(malloc(length));
+    for (int i = 0; i < length; ++i) { destBitset[i] = 0; }
+
+    for (auto sourceDestListPair : *g) {
+        std::sort(sourceDestListPair.second.begin(), sourceDestListPair.second.end());
+        bool first = true;
+        uint32_t prevDest = 0;
+        for (const auto &dest: sourceDestListPair.second) {
+
+            // dest = 12
+            // dest / 8 = 1
+            // dest % 8 = 4
+
+            // 0123 4567   0123 4
+            // 0           1    v      2
+            // 0000 0000   0000 1000   0000 0000
+
+            destBitset[dest / 8] |= 1 << (dest % 8);
+
+            if (first || dest != prevDest) {
+                stats.noPaths++;
+                first = false;
+                prevDest = dest;
+            }
+        }
+    }
+
+    for (int i = 0; i < length; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            if (destBitset[i] & 1 << j) stats.noIn++;
+        }
+    }
+
+    delete destBitset;
 
     return stats;
 }
@@ -178,5 +206,5 @@ cardStat SimpleEvaluator::evaluate(RPQTree *query) {
     est->estimate(query);
 
     auto res = evaluate_aux(query);
-    return SimpleEvaluator::computeStats(res);
+    return computeStats(res);
 }

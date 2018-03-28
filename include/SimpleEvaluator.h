@@ -34,7 +34,7 @@ public:
     static std::shared_ptr<intermediate> project(uint32_t label, bool inverse, std::shared_ptr<SimpleGraph> &g);
     static std::shared_ptr<intermediate> join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
 
-    static cardStat computeStats(std::shared_ptr<intermediate> &g);
+    cardStat computeStats(std::shared_ptr<intermediate> &g);
 
 };
 
