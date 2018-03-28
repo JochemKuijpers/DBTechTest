@@ -25,16 +25,16 @@ void SimpleEvaluator::prepare() {
 
 }
 
-cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
+cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &g) {
 
     cardStat stats {};
 
 //    for(int source = 0; source < g->getNoVertices(); source++) {
 //        if(!g->adj[source].empty()) stats.noOut++;
 //    }
-    stats.noOut = 420; // TODO: Fix.
+    stats.noOut = g->size();
 
-    stats.noPaths = g->getNoDistinctEdges();
+    stats.noPaths = 420; // TODO: Fix.
 
 //    for(int target = 0; target < g->getNoVertices(); target++) {
 //        //if(!g->reverse_adj[target].empty()) stats.noIn++;
@@ -44,18 +44,17 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
     return stats;
 }
 
-std::shared_ptr<SimpleGraph> SimpleEvaluator::project(uint32_t projectLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
+std::shared_ptr<intermediate> SimpleEvaluator::project(uint32_t projectLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
 
-    auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
-    out->setNoLabels(in->getNoLabels());
+    auto out = std::make_shared<intermediate>();
 
     if (!inverse) {
         for (const auto &sourceDestPair : in->adj[projectLabel]) {
-            out->addEdge(sourceDestPair.first, sourceDestPair.second, projectLabel);
+            (*out)[sourceDestPair.first].emplace_back(sourceDestPair.second);
         }
     } else {
         for (const auto &sourceDestPair : in->adj[projectLabel]) {
-            out->addEdge(sourceDestPair.second, sourceDestPair.first, projectLabel);
+            (*out)[sourceDestPair.second].emplace_back(sourceDestPair.first);
         }
     }
 
@@ -89,31 +88,38 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::project(uint32_t projectLabel, boo
     return out;
 }
 
-std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
+std::shared_ptr<intermediate> SimpleEvaluator::join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right) {
 
-    auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
-    out->setNoLabels(1);
+    auto out = std::make_shared<intermediate>();
 
-    // (leftSource -> leftTarget) & (rightSource, rightTarget) ==> (leftSource, rightTarget) (if leftTarget == rightSource)
-    for (const auto &leftLabelPair : left->adj) {
-        for (const auto &rightLabelPair : right->adj) {
-            for (const auto &leftSourceDestPair : leftLabelPair.second) {
-                for (const auto &rightSourceDestPair : rightLabelPair.second) {
-                    if (leftSourceDestPair.second == rightSourceDestPair.first) {
-                        out->addEdge(leftSourceDestPair.first, rightSourceDestPair.second, 0);
-                    }
-                }
+    for (const auto &leftSourceDestListPair : *left) { // (source) => (dest vector)
+        for (const auto &leftDest : leftSourceDestListPair.second) {
+            for (const auto &rightDest : (*right)[leftDest]) {
+                (*out)[leftSourceDestListPair.first].emplace_back(rightDest);
             }
         }
     }
 
+//    // (leftSource -> leftTarget) & (rightSource, rightTarget) ==> (leftSource, rightTarget) (if leftTarget == rightSource)
+//    for (const auto &leftLabelPair : left->adj) { // O(1)
+//        for (const auto &rightLabelPair : right->adj) { // O(1)
+//            for (const auto &leftSourceDestPair : leftLabelPair.second) { // O(EL)
+//                for (const auto &rightSourceDestPair : rightLabelPair.second) { // O(EL * ER)
+//                    if (leftSourceDestPair.second == rightSourceDestPair.first) {
+//                        out->addEdge(leftSourceDestPair.first, rightSourceDestPair.second, 0);
+//                    }
+//                }
+//            }
+//        }
+//    }
+
     /*
-    for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
-        for (auto labelTarget : left->adj[leftSource]) {
+    for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) { // O(L)
+        for (auto labelTarget : left->adj[leftSource]) {                             // O(E)
 
             int leftTarget = labelTarget.second;
             // try to join the left target with right source
-            for (auto rightLabelTarget : right->adj[leftTarget]) {
+            for (auto rightLabelTarget : right->adj[leftTarget]) {                   // O(EL + ER)
 
                 auto rightTarget = rightLabelTarget.second;
                 out->addEdge(leftSource, rightTarget, 0);
@@ -124,7 +130,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> 
     return out;
 }
 
-std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluate_aux(RPQTree *q) {
+std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
 
     // evaluate according to the AST bottom-up
 
@@ -155,11 +161,11 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluate_aux(RPQTree *q) {
     if(q->isConcat()) {
 
         // evaluate the children
-        auto leftGraph = SimpleEvaluator::evaluate_aux(q->left);
-        auto rightGraph = SimpleEvaluator::evaluate_aux(q->right);
+        auto leftResult = SimpleEvaluator::evaluate_aux(q->left);
+        auto rightResult = SimpleEvaluator::evaluate_aux(q->right);
 
         // join left with right
-        return SimpleEvaluator::join(leftGraph, rightGraph);
+        return SimpleEvaluator::join(leftResult, rightResult);
 
     }
 
@@ -167,6 +173,10 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluate_aux(RPQTree *q) {
 }
 
 cardStat SimpleEvaluator::evaluate(RPQTree *query) {
+    // TODO: optimize query tree
+
+    est->estimate(query);
+
     auto res = evaluate_aux(query);
     return SimpleEvaluator::computeStats(res);
 }

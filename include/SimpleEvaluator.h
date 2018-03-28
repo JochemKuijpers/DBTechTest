@@ -13,6 +13,8 @@
 #include "Evaluator.h"
 #include "Graph.h"
 
+typedef std::unordered_map<uint32_t, std::vector<uint32_t>> intermediate;
+
 class SimpleEvaluator : public Evaluator {
 
     std::shared_ptr<SimpleGraph> graph;
@@ -28,11 +30,11 @@ public:
 
     void attachEstimator(std::shared_ptr<SimpleEstimator> &e);
 
-    std::shared_ptr<SimpleGraph> evaluate_aux(RPQTree *q);
-    static std::shared_ptr<SimpleGraph> project(uint32_t label, bool inverse, std::shared_ptr<SimpleGraph> &g);
-    static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
+    std::shared_ptr<intermediate> evaluate_aux(RPQTree *q);
+    static std::shared_ptr<intermediate> project(uint32_t label, bool inverse, std::shared_ptr<SimpleGraph> &g);
+    static std::shared_ptr<intermediate> join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
 
-    static cardStat computeStats(std::shared_ptr<SimpleGraph> &g);
+    static cardStat computeStats(std::shared_ptr<intermediate> &g);
 
 };
 
