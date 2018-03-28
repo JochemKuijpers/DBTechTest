@@ -22,29 +22,29 @@ void SimpleEstimator::prepare() {
     // adj        [vertex][n] = pair(edgelabel, destination)
     // reverse_adj[vertex][n] = pair(edgelabel, origin)
 
-    for (uint32_t vertex = 0; vertex < graph->getNoVertices(); ++vertex) {
-        for (auto edge : graph->adj[vertex]) {
-            auto label = edge.first;
-            auto destination = edge.second;
-
-            vertexIndexByLabel[label][vertex].push_back(destination);
-
-            // create unique vectors of vertices per label (vector instead of set for random access later)
-            if (std::find(outVertexByLabel[label].begin(), outVertexByLabel[label].end(), vertex) == outVertexByLabel[label].end()) {
-                outVertexByLabel[label].push_back(vertex);
-            }
-            if (std::find(inVertexByLabel[label].begin(), inVertexByLabel[label].end(), destination) == inVertexByLabel[label].end()) {
-                inVertexByLabel[label].push_back(destination);
-            }
-        }
-
-        for (auto edge : graph->reverse_adj[vertex]) {
-            auto label = edge.first;
-            auto origin = edge.second;
-
-            vertexIndexByLabelReverse[label][vertex].push_back(origin);
-        }
-    }
+//    for (uint32_t vertex = 0; vertex < graph->getNoVertices(); ++vertex) {
+//        for (auto edge : graph->adj[vertex]) {
+//            auto label = edge.first;
+//            auto destination = edge.second;
+//
+//            vertexIndexByLabel[label][vertex].push_back(destination);
+//
+//            // create unique vectors of vertices per label (vector instead of set for random access later)
+//            if (std::find(outVertexByLabel[label].begin(), outVertexByLabel[label].end(), vertex) == outVertexByLabel[label].end()) {
+//                outVertexByLabel[label].push_back(vertex);
+//            }
+//            if (std::find(inVertexByLabel[label].begin(), inVertexByLabel[label].end(), destination) == inVertexByLabel[label].end()) {
+//                inVertexByLabel[label].push_back(destination);
+//            }
+//        }
+//
+//        for (auto edge : graph->reverse_adj[vertex]) {
+//            auto label = edge.first;
+//            auto origin = edge.second;
+//
+//            vertexIndexByLabelReverse[label][vertex].push_back(origin);
+//        }
+//    }
 }
 
 void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
