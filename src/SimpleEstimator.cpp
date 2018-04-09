@@ -19,11 +19,11 @@ SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g) :
 }
 
 void SimpleEstimator::prepare() {
-    // adj        [vertex][n] = pair(edgelabel, destination)
+    // edgeLists        [vertex][n] = pair(edgelabel, destination)
     // reverse_adj[vertex][n] = pair(edgelabel, origin)
 
 //    for (uint32_t vertex = 0; vertex < graph->getNoVertices(); ++vertex) {
-//        for (auto edge : graph->adj[vertex]) {
+//        for (auto edge : graph->edgeLists[vertex]) {
 //            auto label = edge.first;
 //            auto destination = edge.second;
 //

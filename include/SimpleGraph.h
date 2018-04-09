@@ -15,11 +15,11 @@
 
 class SimpleGraph : public Graph {
 public:
-    // std::vector<std::vector<std::pair<uint32_t,uint32_t>>> adj;
+    // std::vector<std::vector<std::pair<uint32_t,uint32_t>>> edgeLists;
     // std::vector<std::vector<std::pair<uint32_t,uint32_t>>> reverse_adj; // vertex adjacency list
 
-    // [label] -> (source, destination)
-    std::unordered_map<uint32_t, std::vector<std::pair<uint32_t, uint32_t>>> adj;
+    // [label] -> [(source, destination), (source, destination), ...]
+    std::vector<std::vector<std::pair<uint32_t, uint32_t>>> edgeLists;
 
 protected:
     uint32_t V;

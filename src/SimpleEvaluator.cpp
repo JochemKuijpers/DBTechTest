@@ -29,7 +29,7 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &g) {
 
     cardStat stats {0, 0, 0};
 
-    stats.noOut = g->size();
+    stats.noOut = static_cast<uint32_t>(g->size());
 
     std::unordered_set<uint32_t> uniqueDests;
 
@@ -77,11 +77,11 @@ std::shared_ptr<intermediate> SimpleEvaluator::project(uint32_t projectLabel, bo
     auto out = std::make_shared<intermediate>();
 
     if (!inverse) {
-        for (const auto &sourceDestPair : in->adj[projectLabel]) {
+        for (const auto &sourceDestPair : in->edgeLists[projectLabel]) {
             (*out)[sourceDestPair.first].emplace_back(sourceDestPair.second);
         }
     } else {
-        for (const auto &sourceDestPair : in->adj[projectLabel]) {
+        for (const auto &sourceDestPair : in->edgeLists[projectLabel]) {
             (*out)[sourceDestPair.second].emplace_back(sourceDestPair.first);
         }
     }
@@ -90,7 +90,7 @@ std::shared_ptr<intermediate> SimpleEvaluator::project(uint32_t projectLabel, bo
     if(!inverse) {
         // going forward
         for(uint32_t source = 0; source < in->getNoVertices(); source++) {
-            for (auto labelTarget : in->adj[source]) {
+            for (auto labelTarget : in->edgeLists[source]) {
 
                 auto label = labelTarget.first;
                 auto target = labelTarget.second;
@@ -129,8 +129,8 @@ std::shared_ptr<intermediate> SimpleEvaluator::join(std::shared_ptr<intermediate
     }
 
 //    // (leftSource -> leftTarget) & (rightSource, rightTarget) ==> (leftSource, rightTarget) (if leftTarget == rightSource)
-//    for (const auto &leftLabelPair : left->adj) { // O(1)
-//        for (const auto &rightLabelPair : right->adj) { // O(1)
+//    for (const auto &leftLabelPair : left->edgeLists) { // O(1)
+//        for (const auto &rightLabelPair : right->edgeLists) { // O(1)
 //            for (const auto &leftSourceDestPair : leftLabelPair.second) { // O(EL)
 //                for (const auto &rightSourceDestPair : rightLabelPair.second) { // O(EL * ER)
 //                    if (leftSourceDestPair.second == rightSourceDestPair.first) {
@@ -143,11 +143,11 @@ std::shared_ptr<intermediate> SimpleEvaluator::join(std::shared_ptr<intermediate
 
     /*
     for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) { // O(L)
-        for (auto labelTarget : left->adj[leftSource]) {                             // O(E)
+        for (auto labelTarget : left->edgeLists[leftSource]) {                             // O(E)
 
             int leftTarget = labelTarget.second;
             // try to join the left target with right source
-            for (auto rightLabelTarget : right->adj[leftTarget]) {                   // O(EL + ER)
+            for (auto rightLabelTarget : right->edgeLists[leftTarget]) {                   // O(EL + ER)
 
                 auto rightTarget = rightLabelTarget.second;
                 out->addEdge(leftSource, rightTarget, 0);

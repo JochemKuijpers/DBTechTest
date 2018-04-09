@@ -18,8 +18,8 @@ void SimpleGraph::setNoVertices(uint32_t n) {
 
 uint32_t SimpleGraph::getNoEdges() const {
     uint32_t sum = 0;
-    for (const auto &labelPair : adj) {
-        sum += labelPair.second.size();
+    for (const auto &edgeList : edgeLists) {
+        sum += edgeList.size();
     }
     return sum;
 }
@@ -34,14 +34,14 @@ bool sortPairs(const std::pair<uint32_t,uint32_t> &a, const std::pair<uint32_t,u
 uint32_t SimpleGraph::getNoDistinctEdges() const {
     uint32_t sum = 0;
 
-    for (auto labelPair : adj) {
-        std::sort(labelPair.second.begin(), labelPair.second.end(), sortPairs);
+    for (auto edgeList : edgeLists) {
+        std::sort(edgeList.begin(), edgeList.end(), sortPairs);
 
         uint32_t prevSource = 0;
         uint32_t prevDest = 0;
         bool first = true;
 
-        for (const auto &sourceDestPair : labelPair.second) {
+        for (const auto &sourceDestPair : edgeList) {
             if (first || !(prevSource == sourceDestPair.first && prevDest == sourceDestPair.second)) {
                 first = false;
                 sum++;
@@ -60,6 +60,10 @@ uint32_t SimpleGraph::getNoLabels() const {
 
 void SimpleGraph::setNoLabels(uint32_t noLabels) {
     L = noLabels;
+    edgeLists.reserve(L);
+    for (int i = 0; i < L; ++i) {
+        edgeLists.emplace_back(std::vector<std::pair<uint32_t, uint32_t>>());
+    }
 }
 
 void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
@@ -67,7 +71,8 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
         throw std::runtime_error(std::string("Edge data out of bounds: ") +
                                          "(" + std::to_string(from) + "," + std::to_string(to) + "," +
                                          std::to_string(edgeLabel) + ")");
-    adj[edgeLabel].emplace_back(std::make_pair(from, to));
+
+    edgeLists[edgeLabel].emplace_back(std::make_pair(from, to));
 }
 
 void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
