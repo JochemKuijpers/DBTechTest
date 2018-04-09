@@ -15,15 +15,14 @@
 
 class SimpleGraph : public Graph {
 public:
-    // std::vector<std::vector<std::pair<uint32_t,uint32_t>>> edgeLists;
-    // std::vector<std::vector<std::pair<uint32_t,uint32_t>>> reverse_adj; // vertex adjacency list
-
     // [label] -> [(source1, destination1), (source2, destination2), ...]
     std::vector<std::vector<std::pair<uint32_t, uint32_t>>> edgeLists;
 
 protected:
     uint32_t V;
     uint32_t L;
+
+    bool getValuesFromLine(const std::string &line, char sep, uint32_t (&values)[3]);
 
 public:
 

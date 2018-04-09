@@ -35,7 +35,6 @@ public:
     static std::shared_ptr<intermediate> join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
 
     cardStat computeStats(std::shared_ptr<intermediate> &g);
-
 };
 
 

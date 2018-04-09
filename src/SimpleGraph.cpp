@@ -75,7 +75,7 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     edgeLists[edgeLabel].emplace_back(std::make_pair(from, to));
 }
 
-bool getValuesFromLine(const std::string &line, char sep, uint32_t (&values)[3]) {
+bool SimpleGraph::getValuesFromLine(const std::string &line, char sep, uint32_t (&values)[3]) {
     size_t ppos = 0;
     size_t pos;
 
