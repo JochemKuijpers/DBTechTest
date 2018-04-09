@@ -75,36 +75,44 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     edgeLists[edgeLabel].emplace_back(std::make_pair(from, to));
 }
 
-void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
+bool getValuesFromLine(const std::string &line, char sep, uint32_t (&values)[3]) {
+    size_t ppos = 0;
+    size_t pos;
 
+    for (int i = 0; i < 3; ++i) {
+        pos = line.find(sep, ppos);
+        if (pos == std::string::npos) {
+            values[i] = static_cast<uint32_t>(std::stoul(line.substr(ppos)));
+            return i == 2;
+        }
+        values[i] = static_cast<uint32_t>(std::stoul(line.substr(ppos, pos-ppos)));
+        ppos = pos + 1;
+    }
+    return true;
+}
+
+void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
     std::string line;
     std::ifstream graphFile { fileName };
 
-    std::regex edgePat (R"((\d+)\s(\d+)\s(\d+)\s\.)"); // subject predicate object .
-    std::regex headerPat (R"((\d+),(\d+),(\d+))"); // noNodes,noEdges,noLabels
-
     // parse the header (1st line)
+    // header format: "noNodes,noEdges,noLabels\n"
     std::getline(graphFile, line);
-    std::smatch matches;
-    if(std::regex_search(line, matches, headerPat)) {
-        uint32_t noNodes = (uint32_t) std::stoul(matches[1]);
-        uint32_t noLabels = (uint32_t) std::stoul(matches[3]);
-
-        setNoVertices(noNodes);
-        setNoLabels(noLabels);
-    } else {
+    uint32_t values[3];
+    if (!getValuesFromLine(line, ',', values)) {
         throw std::runtime_error(std::string("Invalid graph header!"));
     }
+    uint32_t noNodes = values[0];
+    uint32_t noLabels = values[2];
+
+    setNoVertices(noNodes);
+    setNoLabels(noLabels);
 
     // parse edge data
+    // edge data format: "source label destination .\n"
     while(std::getline(graphFile, line)) {
-
-        if(std::regex_search(line, matches, edgePat)) {
-            uint32_t subject = (uint32_t) std::stoul(matches[1]);
-            uint32_t predicate = (uint32_t) std::stoul(matches[2]);
-            uint32_t object = (uint32_t) std::stoul(matches[3]);
-
-            addEdge(subject, object, predicate);
+        if (getValuesFromLine(line, ' ', values)) {
+            addEdge(values[0], values[2], values[1]);
         }
     }
 

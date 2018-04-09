@@ -18,7 +18,7 @@ public:
     // std::vector<std::vector<std::pair<uint32_t,uint32_t>>> edgeLists;
     // std::vector<std::vector<std::pair<uint32_t,uint32_t>>> reverse_adj; // vertex adjacency list
 
-    // [label] -> [(source, destination), (source, destination), ...]
+    // [label] -> [(source1, destination1), (source2, destination2), ...]
     std::vector<std::vector<std::pair<uint32_t, uint32_t>>> edgeLists;
 
 protected:
