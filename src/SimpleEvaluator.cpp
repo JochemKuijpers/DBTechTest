@@ -144,14 +144,11 @@ cardStat SimpleEvaluator::evaluate(RPQTree *query) {
     std::cout << "\nOriginal query:\n";
     query->print();
 
-    auto preOpt = std::chrono::steady_clock::now();
-
     RPQTree *optimizedQuery = query;
 
     if (est != nullptr) {
         std::vector<std::pair<uint32_t, bool>> path;
         unpackQueryTree(&path, query);
-
         optimizedQuery = optimizeQuery(&path);
     }
 
@@ -159,17 +156,8 @@ cardStat SimpleEvaluator::evaluate(RPQTree *query) {
     optimizedQuery->print();
     std::cout << "\n";
 
-    auto start = std::chrono::steady_clock::now();
-    auto res = evaluate_aux(query);
-    auto inter = std::chrono::steady_clock::now();
-    auto res2 = evaluate_aux(optimizedQuery);
-    auto end = std::chrono::steady_clock::now();
+    auto res = evaluate_aux(optimizedQuery);
 
-    std::cout << res2 << "\n";
-
-    std::cout << "Optimize: " << std::chrono::duration<double, std::milli>(start - preOpt).count() << " ms\n";
-    std::cout << "Original: " << std::chrono::duration<double, std::milli>(inter-start).count() << " ms\n";
-    std::cout << "Optmized: " << std::chrono::duration<double, std::milli>(end-inter).count() << " ms\n";
     return computeStats(res);
 }
 
