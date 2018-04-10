@@ -21,10 +21,11 @@ class SimpleEvaluator : public Evaluator {
     std::shared_ptr<SimpleGraph> graph;
     std::shared_ptr<SimpleEstimator> est;
 
-    std::unordered_map<uint32_t, std::shared_ptr<intermediate>> evalCache;
+    std::unordered_map<std::string, std::shared_ptr<intermediate>> evalCache;
+    std::unordered_map<std::string, cardStat> statCache;
 
     void unpackQueryTree(query_path *path, RPQTree *q);
-    uint32_t hashPath(query_path *path);
+    std::string pathToString(query_path *path);
 
 public:
     explicit SimpleEvaluator(std::shared_ptr<SimpleGraph> &g);

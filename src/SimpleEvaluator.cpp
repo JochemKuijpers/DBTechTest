@@ -6,7 +6,8 @@
 #include "SimpleEstimator.h"
 #include "SimpleEvaluator.h"
 
-SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) {
+SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) :
+    evalCache(), statCache() {
 
     // works only with SimpleGraph
     graph = g;
@@ -109,11 +110,13 @@ std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
     // evaluate cache
     query_path path;
     unpackQueryTree(&path, q);
-    const uint32_t pathHash = hashPath(&path);
-    auto search = evalCache.find(pathHash);
+    const std::string pathstr = pathToString(&path);
+    auto search = evalCache.find(pathstr);
     if (search != evalCache.end()) {
+        // cache hit!
         return search->second;
     }
+    // cache miss..
 
     std::shared_ptr<intermediate> result;
 
@@ -135,38 +138,50 @@ std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
         result = SimpleEvaluator::join(leftResult, rightResult);
     }
 
-    evalCache[pathHash] = result;
+    evalCache[pathstr] = result;
     return result;
 }
 
 cardStat SimpleEvaluator::evaluate(RPQTree *query) {
+    std::vector<std::pair<uint32_t, bool>> path;
+    unpackQueryTree(&path, query);
 
+    const std::string pathstr = pathToString(&path);
+    auto search = statCache.find(pathstr);
+    if (search != statCache.end()) {
+
+        // stat cache hit!
+        return search->second;
+
+    }
+
+    // stat cache miss
     std::cout << "\nOriginal query:\n";
     query->print();
 
     RPQTree *optimizedQuery = query;
 
     if (est != nullptr) {
-        std::vector<std::pair<uint32_t, bool>> path;
-        unpackQueryTree(&path, query);
         optimizedQuery = optimizeQuery(&path);
     }
 
     std::cout << "\nOptimized query:\n";
     optimizedQuery->print();
-    std::cout << "\n";
 
-    auto res = evaluate_aux(optimizedQuery);
+    auto result = evaluate_aux(optimizedQuery);
+    auto stats = computeStats(result);
+    statCache[pathstr] = stats;
 
-    return computeStats(res);
+    return stats;
 }
 
-uint32_t SimpleEvaluator::hashPath(query_path *path) {
-    uint32_t hash = static_cast<uint32_t>(path->size());
+std::string SimpleEvaluator::pathToString(query_path *path) {
+    std::stringstream ss;
     for(const auto &pair : *path) {
-        hash = (hash << 3) | (pair.first << 1 | pair.second);
+        ss << pair.first;
+        ss << (pair.second ? '+' : '-');
     }
-    return hash;
+    return ss.str();
 }
 
 void SimpleEvaluator::unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
@@ -203,8 +218,6 @@ RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *
 
         cardStat leftEst = est->estimate_aux(leftPath);
         cardStat rightEst = est->estimate_aux(rightPath);
-//        uint32_t currentEst = leftEst.noPaths + rightEst.noPaths;
-//        uint32_t currentEst = leftEst.noPaths / rightEst.noPaths;
         uint32_t currentEst = std::max(leftEst.noPaths, rightEst.noPaths);
 
         if (currentEst < bestEstimation) {
