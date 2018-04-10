@@ -114,8 +114,10 @@ std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
     auto search = evalCache.find(pathstr);
     if (search != evalCache.end()) {
         // cache hit!
+        std::cout << '[' << std::string(path.size(), '#') << ']';
         return search->second;
     }
+    std::cout << '[' << std::string(path.size(), '_') << ']';
     // cache miss..
 
     std::shared_ptr<intermediate> result;
@@ -148,11 +150,11 @@ cardStat SimpleEvaluator::evaluate(RPQTree *query) {
 
     const std::string pathstr = pathToString(&path);
     auto search = statCache.find(pathstr);
+
     if (search != statCache.end()) {
-
         // stat cache hit!
+        std::cout << "\ncardStat cache hit! :D";
         return search->second;
-
     }
 
     // stat cache miss
@@ -167,6 +169,7 @@ cardStat SimpleEvaluator::evaluate(RPQTree *query) {
 
     std::cout << "\nOptimized query:\n";
     optimizedQuery->print();
+    std::cout << "\nEval cache: ";
 
     auto result = evaluate_aux(optimizedQuery);
     auto stats = computeStats(result);
