@@ -33,8 +33,6 @@ void SimpleEstimator::prepare() {
             }
         }
     }
-
-    std::srand(static_cast<unsigned int>(std::time(NULL)));
 }
 
 void SimpleEstimator::unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
@@ -152,6 +150,9 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
 
 cardStat SimpleEstimator::estimate_aux(std::vector<std::pair<uint32_t, bool>> path) {
     if (path.empty()) { return {0, 0, 0}; }
+
+    std::srand(222);
+
 
     auto *leftSamples = new std::vector<uint32_t>();
     auto *rightSamples = new std::vector<uint32_t>();

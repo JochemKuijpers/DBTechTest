@@ -2,6 +2,7 @@
 // Created by Nikolay Yakovets on 2018-02-02.
 //
 
+#include <chrono>
 #include "SimpleEstimator.h"
 #include "SimpleEvaluator.h"
 
@@ -105,6 +106,16 @@ std::shared_ptr<intermediate> SimpleEvaluator::join(std::shared_ptr<intermediate
 }
 
 std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
+    // evaluate cache
+    query_path path;
+    unpackQueryTree(&path, q);
+    const uint32_t pathHash = hashPath(&path);
+    auto search = evalCache.find(pathHash);
+    if (search != evalCache.end()) {
+        return search->second;
+    }
+
+    std::shared_ptr<intermediate> result;
 
     // evaluate according to the AST bottom-up
     if(q->isLeaf()) {
@@ -112,7 +123,7 @@ std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
         uint32_t label = (uint32_t) std::stoul(q->data.substr(0, q->data.length()-1));
         bool inverse = q->data.at(q->data.length()-1) == '-';
 
-        return SimpleEvaluator::project(label, inverse, graph);
+        result = SimpleEvaluator::project(label, inverse, graph);
     }
 
     if(q->isConcat()) {
@@ -121,16 +132,19 @@ std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
         auto rightResult = SimpleEvaluator::evaluate_aux(q->right);
 
         // join left with right
-        return SimpleEvaluator::join(leftResult, rightResult);
+        result = SimpleEvaluator::join(leftResult, rightResult);
     }
 
-    return nullptr;
+    evalCache[pathHash] = result;
+    return result;
 }
 
 cardStat SimpleEvaluator::evaluate(RPQTree *query) {
 
     std::cout << "\nOriginal query:\n";
     query->print();
+
+    auto preOpt = std::chrono::steady_clock::now();
 
     RPQTree *optimizedQuery = query;
 
@@ -145,8 +159,26 @@ cardStat SimpleEvaluator::evaluate(RPQTree *query) {
     optimizedQuery->print();
     std::cout << "\n";
 
-    auto res = evaluate_aux(optimizedQuery);
+    auto start = std::chrono::steady_clock::now();
+    auto res = evaluate_aux(query);
+    auto inter = std::chrono::steady_clock::now();
+    auto res2 = evaluate_aux(optimizedQuery);
+    auto end = std::chrono::steady_clock::now();
+
+    std::cout << res2 << "\n";
+
+    std::cout << "Optimize: " << std::chrono::duration<double, std::milli>(start - preOpt).count() << " ms\n";
+    std::cout << "Original: " << std::chrono::duration<double, std::milli>(inter-start).count() << " ms\n";
+    std::cout << "Optmized: " << std::chrono::duration<double, std::milli>(end-inter).count() << " ms\n";
     return computeStats(res);
+}
+
+uint32_t SimpleEvaluator::hashPath(query_path *path) {
+    uint32_t hash = static_cast<uint32_t>(path->size());
+    for(const auto &pair : *path) {
+        hash = (hash << 3) | (pair.first << 1 | pair.second);
+    }
+    return hash;
 }
 
 void SimpleEvaluator::unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
@@ -183,15 +215,15 @@ RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *
 
         cardStat leftEst = est->estimate_aux(leftPath);
         cardStat rightEst = est->estimate_aux(rightPath);
-        uint32_t currentEst = leftEst.noPaths + rightEst.noPaths;
+//        uint32_t currentEst = leftEst.noPaths + rightEst.noPaths;
+//        uint32_t currentEst = leftEst.noPaths / rightEst.noPaths;
+        uint32_t currentEst = std::max(leftEst.noPaths, rightEst.noPaths);
 
         if (currentEst < bestEstimation) {
             bestEstimation = currentEst;
             bestEstimationSplit = split;
         }
     }
-
-//    std::cout << "split at " << bestEstimationSplit << "\n";
 
     leftPath.clear();
     rightPath.clear();

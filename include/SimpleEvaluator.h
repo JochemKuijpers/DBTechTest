@@ -14,31 +14,39 @@
 #include "Graph.h"
 
 typedef std::unordered_map<uint32_t, std::vector<uint32_t>> intermediate;
+typedef std::vector<std::pair<uint32_t, bool>> query_path;
 
 class SimpleEvaluator : public Evaluator {
 
     std::shared_ptr<SimpleGraph> graph;
     std::shared_ptr<SimpleEstimator> est;
 
-    void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q);
+    std::unordered_map<uint32_t, std::shared_ptr<intermediate>> evalCache;
+
+    void unpackQueryTree(query_path *path, RPQTree *q);
+    uint32_t hashPath(query_path *path);
 
 public:
     explicit SimpleEvaluator(std::shared_ptr<SimpleGraph> &g);
 
     ~SimpleEvaluator() = default;
-    void prepare() override ;
 
-    cardStat evaluate(RPQTree *query) override ;
+    void prepare() override;
+
+    cardStat evaluate(RPQTree *query) override;
 
     void attachEstimator(std::shared_ptr<SimpleEstimator> &e);
+
     std::shared_ptr<intermediate> evaluate_aux(RPQTree *q);
+
     static std::shared_ptr<intermediate> project(uint32_t label, bool inverse, std::shared_ptr<SimpleGraph> &g);
 
-    static std::shared_ptr<intermediate> join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
+    static std::shared_ptr<intermediate>
+    join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
 
     cardStat computeStats(std::shared_ptr<intermediate> &result);
 
-    RPQTree *optimizeQuery(std::vector<std::pair<uint32_t, bool>> *path);
+    RPQTree *optimizeQuery(query_path *path);
 };
 
 
