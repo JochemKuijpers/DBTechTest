@@ -25,11 +25,11 @@ void SimpleEvaluator::prepare() {
 
 }
 
-cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &g) {
+cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &result) {
 
     cardStat stats {0, 0, 0};
 
-    stats.noOut = static_cast<uint32_t>(g->size());
+    stats.noOut = static_cast<uint32_t>(result->size());
 
     std::unordered_set<uint32_t> uniqueDests;
 
@@ -37,7 +37,7 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &g) {
     auto *destBitset = static_cast<uint8_t *>(malloc(length));
     for (int i = 0; i < length; ++i) { destBitset[i] = 0; }
 
-    for (auto sourceDestListPair : *g) {
+    for (auto sourceDestListPair : *result) {
         std::sort(sourceDestListPair.second.begin(), sourceDestListPair.second.end());
         bool first = true;
         uint32_t prevDest = 0;
@@ -86,33 +86,6 @@ std::shared_ptr<intermediate> SimpleEvaluator::project(uint32_t projectLabel, bo
         }
     }
 
-    /*
-    if(!inverse) {
-        // going forward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
-            for (auto labelTarget : in->edgeLists[source]) {
-
-                auto label = labelTarget.first;
-                auto target = labelTarget.second;
-
-                if (label == projectLabel)
-                    out->addEdge(source, target, label);
-            }
-        }
-    } else {
-        // going backward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
-            for (auto labelTarget : in->reverse_adj[source]) {
-
-                auto label = labelTarget.first;
-                auto target = labelTarget.second;
-
-                if (label == projectLabel)
-                    out->addEdge(source, target, label);
-            }
-        }
-    }
-*/
     return out;
 }
 
@@ -128,83 +101,111 @@ std::shared_ptr<intermediate> SimpleEvaluator::join(std::shared_ptr<intermediate
         }
     }
 
-//    // (leftSource -> leftTarget) & (rightSource, rightTarget) ==> (leftSource, rightTarget) (if leftTarget == rightSource)
-//    for (const auto &leftLabelPair : left->edgeLists) { // O(1)
-//        for (const auto &rightLabelPair : right->edgeLists) { // O(1)
-//            for (const auto &leftSourceDestPair : leftLabelPair.second) { // O(EL)
-//                for (const auto &rightSourceDestPair : rightLabelPair.second) { // O(EL * ER)
-//                    if (leftSourceDestPair.second == rightSourceDestPair.first) {
-//                        out->addEdge(leftSourceDestPair.first, rightSourceDestPair.second, 0);
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-    /*
-    for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) { // O(L)
-        for (auto labelTarget : left->edgeLists[leftSource]) {                             // O(E)
-
-            int leftTarget = labelTarget.second;
-            // try to join the left target with right source
-            for (auto rightLabelTarget : right->edgeLists[leftTarget]) {                   // O(EL + ER)
-
-                auto rightTarget = rightLabelTarget.second;
-                out->addEdge(leftSource, rightTarget, 0);
-
-            }
-        }
-    }*/
     return out;
 }
 
 std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
 
     // evaluate according to the AST bottom-up
-
     if(q->isLeaf()) {
         // project out the label in the AST
-        std::regex directLabel (R"((\d+)\+)");
-        std::regex inverseLabel (R"((\d+)\-)");
-
-        std::smatch matches;
-
-        uint32_t label;
-        bool inverse;
-
-        if(std::regex_search(q->data, matches, directLabel)) {
-            label = (uint32_t) std::stoul(matches[1]);
-            inverse = false;
-        } else if(std::regex_search(q->data, matches, inverseLabel)) {
-            label = (uint32_t) std::stoul(matches[1]);
-            inverse = true;
-        } else {
-            std::cerr << "Label parsing failed!" << std::endl;
-            return nullptr;
-        }
+        uint32_t label = (uint32_t) std::stoul(q->data.substr(0, q->data.length()-1));
+        bool inverse = q->data.at(q->data.length()-1) == '-';
 
         return SimpleEvaluator::project(label, inverse, graph);
     }
 
     if(q->isConcat()) {
-
         // evaluate the children
         auto leftResult = SimpleEvaluator::evaluate_aux(q->left);
         auto rightResult = SimpleEvaluator::evaluate_aux(q->right);
 
         // join left with right
         return SimpleEvaluator::join(leftResult, rightResult);
-
     }
 
     return nullptr;
 }
 
 cardStat SimpleEvaluator::evaluate(RPQTree *query) {
-    // TODO: optimize query tree
 
-    if (est != nullptr) est->estimate(query);
+    std::cout << "\nOriginal query:\n";
+    query->print();
 
-    auto res = evaluate_aux(query);
+    RPQTree *optimizedQuery = query;
+
+    if (est != nullptr) {
+        std::vector<std::pair<uint32_t, bool>> path;
+        unpackQueryTree(&path, query);
+
+        optimizedQuery = optimizeQuery(&path);
+    }
+
+    std::cout << "\nOptimized query:\n";
+    optimizedQuery->print();
+    std::cout << "\n";
+
+    auto res = evaluate_aux(optimizedQuery);
     return computeStats(res);
+}
+
+void SimpleEvaluator::unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
+    if (q->isConcat()) {
+        unpackQueryTree(path, q->left);
+        unpackQueryTree(path, q->right);
+        return;
+    }
+
+    char* sign;
+    const auto label = static_cast<uint32_t>(strtoll(q->data.c_str(), &sign, 10));
+    path->emplace_back(label, *sign == '+');
+}
+
+RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *path) {
+
+    if (path->size() == 1) {
+        auto data = std::to_string((*path)[0].first) + ((*path)[0].second ? "+" : "-");
+        return new RPQTree(data, nullptr, nullptr);
+    }
+
+    std::vector<std::pair<uint32_t, bool>> leftPath, rightPath;
+
+    uint32_t bestEstimation = 0xFFFFFFFF;
+    uint32_t bestEstimationSplit = 0;
+
+    for (uint32_t split = 0; split < path->size()-1; ++split) {
+        leftPath.clear();
+        rightPath.clear();
+        for (int i = 0; i < path->size(); ++i) {
+            if (i <= split) { leftPath.emplace_back((*path)[i]); }
+            else           { rightPath.emplace_back((*path)[i]); }
+        }
+
+        cardStat leftEst = est->estimate_aux(leftPath);
+        cardStat rightEst = est->estimate_aux(rightPath);
+        uint32_t currentEst = leftEst.noPaths + rightEst.noPaths;
+
+        if (currentEst < bestEstimation) {
+            bestEstimation = currentEst;
+            bestEstimationSplit = split;
+        }
+    }
+
+//    std::cout << "split at " << bestEstimationSplit << "\n";
+
+    leftPath.clear();
+    rightPath.clear();
+    for (int i = 0; i < path->size(); ++i) {
+        if (i <= bestEstimationSplit) {
+            leftPath.emplace_back((*path)[i]);
+        } else {
+            rightPath.emplace_back((*path)[i]);
+        }
+    }
+
+    RPQTree* leftTree = optimizeQuery(&leftPath);
+    RPQTree* rightTree = optimizeQuery(&rightPath);
+
+    std::string data = "/";
+    return new RPQTree(data, leftTree, rightTree);
 }

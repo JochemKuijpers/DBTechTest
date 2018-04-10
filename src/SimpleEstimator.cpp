@@ -37,7 +37,7 @@ void SimpleEstimator::prepare() {
     std::srand(static_cast<unsigned int>(std::time(NULL)));
 }
 
-void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
+void SimpleEstimator::unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
     if (q->isConcat()) {
         unpackQueryTree(path, q->left);
         unpackQueryTree(path, q->right);
@@ -49,7 +49,7 @@ void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
     path->emplace_back(label, *sign == '+');
 }
 
-void generateSampleIds(uint32_t maxId, std::vector<uint32_t> *sampleIds, uint32_t n) {
+void SimpleEstimator::generateSampleIds(uint32_t maxId, std::vector<uint32_t> *sampleIds, uint32_t n) {
     sampleIds->clear();
 
     if (n*8 > maxId) {
@@ -147,6 +147,10 @@ cardStat SimpleEstimator::estimate(RPQTree *q) {
     auto path = std::vector<std::pair<uint32_t, bool>>();
     unpackQueryTree(&path, q);
 
+    return estimate_aux(path);
+}
+
+cardStat SimpleEstimator::estimate_aux(std::vector<std::pair<uint32_t, bool>> path) {
     if (path.empty()) { return {0, 0, 0}; }
 
     auto *leftSamples = new std::vector<uint32_t>();

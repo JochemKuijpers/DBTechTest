@@ -20,21 +20,25 @@ class SimpleEvaluator : public Evaluator {
     std::shared_ptr<SimpleGraph> graph;
     std::shared_ptr<SimpleEstimator> est;
 
+    void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q);
+
 public:
-
     explicit SimpleEvaluator(std::shared_ptr<SimpleGraph> &g);
-    ~SimpleEvaluator() = default;
 
+    ~SimpleEvaluator() = default;
     void prepare() override ;
+
     cardStat evaluate(RPQTree *query) override ;
 
     void attachEstimator(std::shared_ptr<SimpleEstimator> &e);
-
     std::shared_ptr<intermediate> evaluate_aux(RPQTree *q);
     static std::shared_ptr<intermediate> project(uint32_t label, bool inverse, std::shared_ptr<SimpleGraph> &g);
+
     static std::shared_ptr<intermediate> join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
 
-    cardStat computeStats(std::shared_ptr<intermediate> &g);
+    cardStat computeStats(std::shared_ptr<intermediate> &result);
+
+    RPQTree *optimizeQuery(std::vector<std::pair<uint32_t, bool>> *path);
 };
 
 
