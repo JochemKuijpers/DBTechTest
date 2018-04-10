@@ -84,9 +84,9 @@ double SimpleEstimator::generateSampling(std::vector<uint32_t> *from, std::vecto
     }
 
     // generate list of all sampleIds, shuffle it and only use the first sampleSize items
-//    generateSampleIds(static_cast<uint32_t>(from->size()), &sampleIds, sampleSize);
-    for (uint32_t i = 0; i < from->size(); sampleIds.push_back(i++));
-    std::random_shuffle(sampleIds.begin(), sampleIds.end());
+//    for (uint32_t i = 0; i < from->size(); sampleIds.push_back(i++));
+//    std::random_shuffle(sampleIds.begin(), sampleIds.end());
+    generateSampleIds(static_cast<uint32_t>(from->size()), &sampleIds, sampleSize);
 
     for (uint32_t i = 0; i < sampleSize; i++) {
         to->push_back((*from)[sampleIds[i]]);
@@ -120,9 +120,9 @@ double SimpleEstimator::indexBasedJoinSampling(std::unordered_map<uint32_t, std:
     }
 
     // generate list of all sampleIds, shuffle it and only use the first sampleSize items
-    for (uint32_t i = 0; i < cpt; sampleIds.push_back(i++));
-    std::random_shuffle(sampleIds.begin(), sampleIds.end());
-//    generateSampleIds(cpt, &sampleIds, sampleSize);
+//    for (uint32_t i = 0; i < cpt; sampleIds.push_back(i++));
+//    std::random_shuffle(sampleIds.begin(), sampleIds.end());
+    generateSampleIds(cpt, &sampleIds, sampleSize);
 
     uint32_t ID;
     uint32_t fromVertexIndex;
