@@ -62,7 +62,7 @@ void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
 void generateSampleIds(uint32_t maxId, std::vector<uint32_t> *sampleIds, uint32_t n) {
     sampleIds->clear();
 
-    if (n*2 > maxId || true) {
+    if (n*64 > maxId) {
         std::vector<uint32_t> tmpSampleIds;
         for (uint32_t i = 0; i < maxId; tmpSampleIds.push_back(i++));
         std::random_shuffle(tmpSampleIds.begin(), tmpSampleIds.end());
