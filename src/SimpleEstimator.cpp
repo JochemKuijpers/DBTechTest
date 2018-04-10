@@ -19,22 +19,32 @@ SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g) :
 }
 
 void SimpleEstimator::prepare() {
-    for (uint32_t label = 0; label < graph->getNoLabels(); ++label) {
-        for (const auto &edge : graph->edgeLists[label]) {
-            vertexIndexByLabel       [label][edge.first].emplace_back(edge.second);
-            vertexIndexByLabelReverse[label][edge.second].emplace_back(edge.first);
+    // adj        [vertex][n] = pair(edgelabel, destination)
+    // reverse_adj[vertex][n] = pair(edgelabel, origin)
+
+    for (uint32_t vertex = 0; vertex < graph->getNoVertices(); ++vertex) {
+        for (auto edge : graph->adj[vertex]) {
+            auto label = edge.first;
+            auto destination = edge.second;
+
+            vertexIndexByLabel[label][vertex].push_back(destination);
 
             // create unique vectors of vertices per label (vector instead of set for random access later)
-            if (std::find(outVertexByLabel[label].begin(), outVertexByLabel[label].end(), edge.first) == outVertexByLabel[label].end()) {
-                outVertexByLabel[label].push_back(edge.first);
+            if (std::find(outVertexByLabel[label].begin(), outVertexByLabel[label].end(), vertex) == outVertexByLabel[label].end()) {
+                outVertexByLabel[label].push_back(vertex);
             }
-            if (std::find(inVertexByLabel[label].begin(), inVertexByLabel[label].end(), edge.second) == inVertexByLabel[label].end()) {
-                inVertexByLabel[label].push_back(edge.second);
+            if (std::find(inVertexByLabel[label].begin(), inVertexByLabel[label].end(), destination) == inVertexByLabel[label].end()) {
+                inVertexByLabel[label].push_back(destination);
             }
         }
-    }
 
-    std::srand(static_cast<unsigned int>(std::time(NULL)));
+        for (auto edge : graph->reverse_adj[vertex]) {
+            auto label = edge.first;
+            auto origin = edge.second;
+
+            vertexIndexByLabelReverse[label][vertex].push_back(origin);
+        }
+    }
 }
 
 void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
