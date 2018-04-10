@@ -19,32 +19,22 @@ SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g) :
 }
 
 void SimpleEstimator::prepare() {
-    // edgeLists        [vertex][n] = pair(edgelabel, destination)
-    // reverse_adj[vertex][n] = pair(edgelabel, origin)
+    for (uint32_t label = 0; label < graph->getNoLabels(); ++label) {
+        for (const auto &edge : graph->edgeLists[label]) {
+            vertexIndexByLabel       [label][edge.first].emplace_back(edge.second);
+            vertexIndexByLabelReverse[label][edge.second].emplace_back(edge.first);
 
-//    for (uint32_t vertex = 0; vertex < graph->getNoVertices(); ++vertex) {
-//        for (auto edge : graph->edgeLists[vertex]) {
-//            auto label = edge.first;
-//            auto destination = edge.second;
-//
-//            vertexIndexByLabel[label][vertex].push_back(destination);
-//
-//            // create unique vectors of vertices per label (vector instead of set for random access later)
-//            if (std::find(outVertexByLabel[label].begin(), outVertexByLabel[label].end(), vertex) == outVertexByLabel[label].end()) {
-//                outVertexByLabel[label].push_back(vertex);
-//            }
-//            if (std::find(inVertexByLabel[label].begin(), inVertexByLabel[label].end(), destination) == inVertexByLabel[label].end()) {
-//                inVertexByLabel[label].push_back(destination);
-//            }
-//        }
-//
-//        for (auto edge : graph->reverse_adj[vertex]) {
-//            auto label = edge.first;
-//            auto origin = edge.second;
-//
-//            vertexIndexByLabelReverse[label][vertex].push_back(origin);
-//        }
-//    }
+            // create unique vectors of vertices per label (vector instead of set for random access later)
+            if (std::find(outVertexByLabel[label].begin(), outVertexByLabel[label].end(), edge.first) == outVertexByLabel[label].end()) {
+                outVertexByLabel[label].push_back(edge.first);
+            }
+            if (std::find(inVertexByLabel[label].begin(), inVertexByLabel[label].end(), edge.second) == inVertexByLabel[label].end()) {
+                inVertexByLabel[label].push_back(edge.second);
+            }
+        }
+    }
+
+    std::srand(static_cast<unsigned int>(std::time(NULL)));
 }
 
 void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
@@ -59,6 +49,31 @@ void unpackQueryTree(std::vector<std::pair<uint32_t, bool>> *path, RPQTree *q) {
     path->emplace_back(label, *sign == '+');
 }
 
+void generateSampleIds(uint32_t maxId, std::vector<uint32_t> *sampleIds, uint32_t n) {
+    sampleIds->clear();
+
+    if (n*2 > maxId) {
+        std::vector<uint32_t> tmpSampleIds;
+        for (uint32_t i = 0; i < maxId; tmpSampleIds.push_back(i++));
+        std::random_shuffle(tmpSampleIds.begin(), tmpSampleIds.end());
+
+        for (uint32_t i = 0; i < n; i++) {
+            sampleIds->push_back(tmpSampleIds[i]);
+        }
+        return;
+    }
+
+    std::unordered_set<uint32_t> tmpSampleIds;
+    std::uniform_int_distribution<uint32_t> dist(0, maxId-1);
+    std::random_device rand;
+    while (tmpSampleIds.size() < n) {
+        tmpSampleIds.insert(dist(rand));
+    }
+    for (auto sample : tmpSampleIds) {
+        sampleIds->emplace_back(sample);
+    }
+}
+
 double SimpleEstimator::generateSampling(std::vector<uint32_t> *from, std::vector<uint32_t> *to, uint32_t sampleSize) {
     std::vector<uint32_t> sampleIds;
     if (from->size() <= sampleSize) {
@@ -69,6 +84,7 @@ double SimpleEstimator::generateSampling(std::vector<uint32_t> *from, std::vecto
     }
 
     // generate list of all sampleIds, shuffle it and only use the first sampleSize items
+//    generateSampleIds(static_cast<uint32_t>(from->size()), &sampleIds, sampleSize);
     for (uint32_t i = 0; i < from->size(); sampleIds.push_back(i++));
     std::random_shuffle(sampleIds.begin(), sampleIds.end());
 
@@ -106,6 +122,7 @@ double SimpleEstimator::indexBasedJoinSampling(std::unordered_map<uint32_t, std:
     // generate list of all sampleIds, shuffle it and only use the first sampleSize items
     for (uint32_t i = 0; i < cpt; sampleIds.push_back(i++));
     std::random_shuffle(sampleIds.begin(), sampleIds.end());
+//    generateSampleIds(cpt, &sampleIds, sampleSize);
 
     uint32_t ID;
     uint32_t fromVertexIndex;

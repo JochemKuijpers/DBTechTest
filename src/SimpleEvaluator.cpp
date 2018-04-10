@@ -203,7 +203,7 @@ std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
 cardStat SimpleEvaluator::evaluate(RPQTree *query) {
     // TODO: optimize query tree
 
-    est->estimate(query);
+    if (est != nullptr) est->estimate(query);
 
     auto res = evaluate_aux(query);
     return computeStats(res);
