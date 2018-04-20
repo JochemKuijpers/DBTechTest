@@ -7,7 +7,7 @@
 
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) :
-    evalCache(), statCache(), threadPool(1) {
+    evalCache(), statCache(), threadPool(4) {
 
     // works only with SimpleGraph
     graph = g;
