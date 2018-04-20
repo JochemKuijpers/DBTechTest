@@ -5,7 +5,6 @@
 #ifndef QS_SIMPLEEVALUATOR_H
 #define QS_SIMPLEEVALUATOR_H
 
-
 #include <memory>
 #include <cmath>
 #include "SimpleGraph.h"
@@ -42,8 +41,7 @@ public:
 
     static std::shared_ptr<intermediate> project(uint32_t label, bool inverse, std::shared_ptr<SimpleGraph> &g);
 
-    static std::shared_ptr<intermediate>
-    join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
+    static std::shared_ptr<intermediate> join(std::shared_ptr<intermediate> &left, std::shared_ptr<intermediate> &right);
 
     cardStat computeStats(std::shared_ptr<intermediate> &result);
 

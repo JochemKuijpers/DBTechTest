@@ -75,9 +75,13 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     edgeLists[edgeLabel].emplace_back(std::make_pair(from, to));
 }
 
-bool SimpleGraph::getValuesFromLine(const std::string &line, char sep, uint32_t (&values)[3]) {
+bool SimpleGraph::getValuesFromLine(std::string &line, char sep, uint32_t (&values)[3]) {
     size_t ppos = 0;
     size_t pos;
+
+    if (*line.rbegin() == '\r') { // windows.. smh
+        line.erase(0, line.length() - 1);
+    }
 
     for (int i = 0; i < 3; ++i) {
         pos = line.find(sep, ppos);

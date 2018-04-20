@@ -19,18 +19,25 @@ SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g) :
 }
 
 void SimpleEstimator::prepare() {
+    std::unordered_set<uint32_t> outVertex, inVertex;
     for (uint32_t label = 0; label < graph->getNoLabels(); ++label) {
+        outVertex.clear();
+        inVertex.clear();
         for (const auto &edge : graph->edgeLists[label]) {
             vertexIndexByLabel       [label][edge.first].emplace_back(edge.second);
             vertexIndexByLabelReverse[label][edge.second].emplace_back(edge.first);
 
-            // create unique vectors of vertices per label (vector instead of set for random access later)
-            if (std::find(outVertexByLabel[label].begin(), outVertexByLabel[label].end(), edge.first) == outVertexByLabel[label].end()) {
-                outVertexByLabel[label].push_back(edge.first);
-            }
-            if (std::find(inVertexByLabel[label].begin(), inVertexByLabel[label].end(), edge.second) == inVertexByLabel[label].end()) {
-                inVertexByLabel[label].push_back(edge.second);
-            }
+            // create sets of unique out and in vertices
+            outVertex.insert(edge.first);
+            inVertex.insert(edge.second);
+        }
+
+        // now copy unique vertices to vector for indexed access
+        for (const auto vout : outVertex) {
+            outVertexByLabel[label].push_back(vout);
+        }
+        for (const auto vin : inVertex) {
+            inVertexByLabel[label].push_back(vin);
         }
     }
 }

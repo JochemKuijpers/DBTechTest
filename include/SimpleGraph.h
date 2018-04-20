@@ -22,7 +22,7 @@ protected:
     uint32_t V;
     uint32_t L;
 
-    bool getValuesFromLine(const std::string &line, char sep, uint32_t (&values)[3]);
+    bool getValuesFromLine(std::string &line, char sep, uint32_t (&values)[3]);
 
 public:
 

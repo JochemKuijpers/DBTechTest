@@ -2,9 +2,11 @@
 // Created by Nikolay Yakovets on 2018-02-02.
 //
 
+#include <thread>
 #include <chrono>
 #include "SimpleEstimator.h"
 #include "SimpleEvaluator.h"
+
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) :
     evalCache(), statCache() {
@@ -24,7 +26,6 @@ void SimpleEvaluator::prepare() {
     if(est != nullptr) est->prepare();
 
     // prepare other things here.., if necessary
-
 }
 
 cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &result) {
@@ -133,8 +134,10 @@ std::shared_ptr<intermediate> SimpleEvaluator::evaluate_aux(RPQTree *q) {
 
     if(q->isConcat()) {
         // evaluate the children
-        auto leftResult = SimpleEvaluator::evaluate_aux(q->left);
-        auto rightResult = SimpleEvaluator::evaluate_aux(q->right);
+        std::shared_ptr<intermediate> leftResult, rightResult;
+
+        leftResult = SimpleEvaluator::evaluate_aux(q->left);
+        rightResult = SimpleEvaluator::evaluate_aux(q->right);
 
         // join left with right
         result = SimpleEvaluator::join(leftResult, rightResult);
@@ -208,7 +211,7 @@ RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *
 
     std::vector<std::pair<uint32_t, bool>> leftPath, rightPath;
 
-    uint32_t bestEstimation = 0xFFFFFFFF;
+    uint32_t bestEstimation = UINT32_MAX;
     uint32_t bestEstimationSplit = 0;
 
     for (uint32_t split = 0; split < path->size()-1; ++split) {
