@@ -26,7 +26,7 @@
 
 class ThreadedJobPool {
 private:
-    std::vector<std::thread*> workers;
+    std::vector<std::thread> workers;
     std::queue<std::function<void()>> jobs;
 
     std::mutex mutex;
@@ -80,8 +80,7 @@ inline ThreadedJobPool::ThreadedJobPool(size_t nWorkers)
 {
     for (size_t n = 0; n < nWorkers; ++n) {
         std::cout << "Creating worker...\n";
-        auto t = new std::thread(&ThreadedJobPool::workerLoop, this);
-        workers.push_back(t);
+        workers.emplace_back(&ThreadedJobPool::workerLoop, this);
     }
 }
 
@@ -91,9 +90,9 @@ inline ThreadedJobPool::~ThreadedJobPool() {
         stop = true;
     }
     cv.notify_all();
-    for (auto const &worker : workers) {
+    for (std::thread &worker : workers) {
         std::cout << "Joining worker...\n";
-        worker->join();
+        worker.join();
     }
 }
 

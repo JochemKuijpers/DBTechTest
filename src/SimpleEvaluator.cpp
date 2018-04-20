@@ -7,7 +7,7 @@
 
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) :
-    evalCache(), statCache(), threadPool(4) {
+    evalCache(), statCache(), threadPool(8) {
 
     // works only with SimpleGraph
     graph = g;
@@ -256,11 +256,11 @@ RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *
 std::shared_future<std::shared_ptr<intermediate>> SimpleEvaluator::evaluate_async(RPQTree* q) {
 
     if (q->isLeaf()) {
-        return threadPool.enqueue([](RPQTree* q, std::shared_ptr<SimpleGraph>* graph) {
+        return threadPool.enqueue([](RPQTree* q, std::shared_ptr<SimpleGraph> graph) {
             uint32_t label = (uint32_t) std::stoul(q->data.substr(0, q->data.length()-1));
             bool inverse = q->data.at(q->data.length()-1) == '-';
-            return SimpleEvaluator::project(label, inverse, *graph);
-        }, q, &graph);
+            return SimpleEvaluator::project(label, inverse, graph);
+        }, q, graph);
     }
 
     auto* leftFuture = new std::shared_future<std::shared_ptr<intermediate>>();
