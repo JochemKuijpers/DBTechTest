@@ -2,14 +2,12 @@
 // Created by Nikolay Yakovets on 2018-02-02.
 //
 
-#include <thread>
-#include <chrono>
 #include "SimpleEstimator.h"
 #include "SimpleEvaluator.h"
 
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) :
-    evalCache(), statCache() {
+    evalCache(), statCache(), threadPool(4) {
 
     // works only with SimpleGraph
     graph = g;
@@ -38,7 +36,7 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &result) {
 
     uint32_t length = graph->getNoVertices() / sizeof(uint8_t) + 1;
     auto *destBitset = static_cast<uint8_t *>(malloc(length));
-    for (int i = 0; i < length; ++i) { destBitset[i] = 0; }
+    for (uint32_t i = 0; i < length; ++i) { destBitset[i] = 0; }
 
     for (auto sourceDestListPair : *result) {
         std::sort(sourceDestListPair.second.begin(), sourceDestListPair.second.end());
@@ -64,8 +62,8 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<intermediate> &result) {
         }
     }
 
-    for (int i = 0; i < length; ++i) {
-        for (int j = 0; j < 8; ++j) {
+    for (uint32_t  i = 0; i < length; ++i) {
+        for (uint32_t  j = 0; j < 8; ++j) {
             if (destBitset[i] & 1 << j) stats.noIn++;
         }
     }
@@ -172,9 +170,15 @@ cardStat SimpleEvaluator::evaluate(RPQTree *query) {
 
     std::cout << "\nOptimized query:\n";
     optimizedQuery->print();
-    std::cout << "\nEval cache: ";
 
+#define ASYNC true
+#if ASYNC
+    auto future = evaluate_async(optimizedQuery);
+    auto result = future.get();
+#else
     auto result = evaluate_aux(optimizedQuery);
+#endif
+
     auto stats = computeStats(result);
     statCache[pathstr] = stats;
 
@@ -217,7 +221,7 @@ RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *
     for (uint32_t split = 0; split < path->size()-1; ++split) {
         leftPath.clear();
         rightPath.clear();
-        for (int i = 0; i < path->size(); ++i) {
+        for (size_t i = 0; i < path->size(); ++i) {
             if (i <= split) { leftPath.emplace_back((*path)[i]); }
             else           { rightPath.emplace_back((*path)[i]); }
         }
@@ -234,7 +238,7 @@ RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *
 
     leftPath.clear();
     rightPath.clear();
-    for (int i = 0; i < path->size(); ++i) {
+    for (size_t i = 0; i < path->size(); ++i) {
         if (i <= bestEstimationSplit) {
             leftPath.emplace_back((*path)[i]);
         } else {
@@ -247,4 +251,39 @@ RPQTree* SimpleEvaluator::optimizeQuery(std::vector<std::pair<uint32_t, bool>> *
 
     std::string data = "/";
     return new RPQTree(data, leftTree, rightTree);
+}
+
+std::shared_future<std::shared_ptr<intermediate>> SimpleEvaluator::evaluate_async(RPQTree* q) {
+
+    if (q->isLeaf()) {
+        return threadPool.enqueue([](RPQTree* q, std::shared_ptr<SimpleGraph> graph) {
+            uint32_t label = (uint32_t) std::stoul(q->data.substr(0, q->data.length()-1));
+            bool inverse = q->data.at(q->data.length()-1) == '-';
+            return SimpleEvaluator::project(label, inverse, graph);
+        }, q, graph);
+    }
+
+    auto* leftFuture = new std::shared_future<std::shared_ptr<intermediate>>();
+    auto* rightFuture = new std::shared_future<std::shared_ptr<intermediate>>();
+
+    // prioritize subtree evaluation over leaf evaluation
+    if (q->left->isLeaf() && !q->right->isLeaf()) {
+        *rightFuture = evaluate_async(q->right);
+        *leftFuture = evaluate_async(q->left);
+    } else {
+        *leftFuture = evaluate_async(q->left);
+        *rightFuture = evaluate_async(q->right);
+    }
+
+    // <-- both left and right are NOW queued, so will finish before the next join job we enqueue here
+    return threadPool.enqueue([](std::shared_future<std::shared_ptr<intermediate>>* leftFuture,
+                                 std::shared_future<std::shared_ptr<intermediate>>* rightFuture){
+        std::shared_ptr<intermediate> left, right;
+
+        // when this job is being executed, left and right have already started, we only need to wait :)
+        left = leftFuture->get();
+        right = rightFuture->get();
+        delete leftFuture, rightFuture;
+        return SimpleEvaluator::join(left, right);
+    }, leftFuture, rightFuture);
 }
