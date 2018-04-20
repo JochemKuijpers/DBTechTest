@@ -29,4 +29,8 @@ set(SOURCE_FILES
         src/SimpleEvaluator.cpp
         )
 
+find_package (Threads)
+
 add_executable(quicksilver ${SOURCE_FILES} ${HEADER_FILES})
+
+target_link_libraries (quicksilver ${CMAKE_THREAD_LIBS_INIT})
